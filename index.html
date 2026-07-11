@@ -32,302 +32,210 @@
 <div id="root"></div>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<script type="text/babel" data-presets="react">
-const { useEffect, useMemo, useState } = React;
-
-/* ---------- Datos fijos ---------- */
-const PARTICIPANTS = [
-  { name: "Milagros", slug: "milagros" },
-  { name: "Francisco", slug: "francisco" },
-  { name: "Ma José", slug: "majose" },
-  { name: "Sofía", slug: "sofia" },
-  { name: "Inés", slug: "ines" },
-  { name: "Mani", slug: "mani" },
-  { name: "Fer", slug: "fer" },
-];
-
-const DEFAULT_MATCHES = [
-  { id:"qf1", stage:"Cuartos", date:"Sáb 11 Jul", teamA:"Inglaterra", teamB:"Noruega", editableA:false, editableB:false },
-  { id:"qf2", stage:"Cuartos", date:"Sáb 11 Jul", teamA:"Argentina", teamB:"Suiza", editableA:false, editableB:false },
-  { id:"sf1", stage:"Semifinal", date:"Mar 14 Jul", teamA:"Francia", teamB:"España", editableA:false, editableB:false },
-  { id:"sf2", stage:"Semifinal", date:"Mié 15 Jul", teamA:"Ganador Ing/Nor", teamB:"Ganador Arg/Sui", editableA:true, editableB:true },
-  { id:"tp", stage:"Tercer Puesto", date:"Sáb 18 Jul", teamA:"Perdedor SF1", teamB:"Perdedor SF2", editableA:true, editableB:true },
-  { id:"final", stage:"Final", date:"Dom 19 Jul", teamA:"Ganador SF1", teamB:"Ganador SF2", editableA:true, editableB:true },
-];
-
-/* ---------- localStorage seguro ---------- */
-function safeGet(key, fallback){
-  try{ const raw = window.localStorage.getItem(key); if(!raw) return fallback; return JSON.parse(raw); }
-  catch(e){ return fallback; }
-}
-function safeSet(key, value){
-  try{ window.localStorage.setItem(key, JSON.stringify(value)); }catch(e){}
-}
-
-/* ---------- Scoring ---------- */
-function sign(n){ return n>0?1:n<0?-1:0; }
-function pointsFor(pred, res){
-  if(!pred || !res) return null;
-  if(pred.a===res.a && pred.b===res.b) return 3;
-  if(sign(pred.a-pred.b)===sign(res.a-res.b)) return 1;
-  return 0;
-}
-
-/* ---------- Stepper ---------- */
-function Stepper({ team, value, onChange }){
-  const clamp = (v)=> Math.max(0, Math.min(20, v));
-  return (
-    <div style={s.stepRow}>
-      <div style={s.teamName} className="condensed">{team}</div>
-      <div style={s.stepControls}>
-        <button aria-label="menos" style={s.stepBtn} onClick={()=>onChange(clamp(value-1))}>−</button>
-        <div style={s.digit} className="condensed">{value}</div>
-        <button aria-label="mas" style={s.stepBtn} onClick={()=>onChange(clamp(value+1))}>+</button>
-      </div>
-    </div>
-  );
-}
-
-function TabBtn({ label, active, onClick }){
-  return <button onClick={onClick} className="condensed" style={{...s.tabBtn, ...(active?s.tabBtnActive:{})}}>{label}</button>;
-}
-
-function MatchCard({ match, children }){
-  return (
-    <div style={s.card}>
-      <div style={s.cardHead}>
-        <span style={s.stage} className="condensed">{match.stage}</span>
-        <span style={s.date} className="condensed">{match.date}</span>
-      </div>
-      <div style={s.board}>{children}</div>
-    </div>
-  );
-}
-
-/* ---------- App ---------- */
-function App(){
-  const [ready, setReady] = useState(false);
-  const [who, setWho] = useState("");
-  const [tab, setTab] = useState("pred");
-  const [matches, setMatches] = useState(DEFAULT_MATCHES);
-  const [results, setResults] = useState({});
-  const [draft, setDraft] = useState({});
-  const [resDraft, setResDraft] = useState({});
-  const [allPreds, setAllPreds] = useState({});
-  const [toast, setToast] = useState("");
-
-  useEffect(()=>{
-    const savedMatches = safeGet("matches", DEFAULT_MATCHES);
-    const merged = DEFAULT_MATCHES.map((d)=>{
-      const found = savedMatches.find((m)=> m.id===d.id);
-      return found ? { ...d, teamA:found.teamA, teamB:found.teamB } : d;
-    });
-    setMatches(merged);
-    const savedResults = safeGet("results", {});
-    setResults(savedResults); setResDraft(savedResults);
-    const preds = {};
-    for(const p of PARTICIPANTS){ preds[p.slug] = safeGet("pred_"+p.slug, {}); }
-    setAllPreds(preds);
-    const savedWho = safeGet("who", "");
-    if(savedWho) setWho(savedWho);
-    setReady(true);
-  }, []);
-
-  useEffect(()=>{
-    if(!who){ setDraft({}); return; }
-    setDraft(allPreds[who] ? { ...allPreds[who] } : {});
-  }, [who, allPreds]);
-
-  function flash(msg){ setToast(msg); window.setTimeout(()=>setToast(""), 2200); }
-  function selectWho(slug){ setWho(slug); safeSet("who", slug); }
-  function setDraftScore(matchId, side, v){
-    setDraft((prev)=>{ const cur = prev[matchId] ?? {a:0,b:0}; return { ...prev, [matchId]: { ...cur, [side]: v } }; });
+<script>
+"use strict";
+(() => {
+  const { useEffect, useMemo, useState } = React;
+  const PARTICIPANTS = [
+    { name: "Milagros", slug: "milagros" },
+    { name: "Francisco", slug: "francisco" },
+    { name: "Ma Jos\xE9", slug: "majose" },
+    { name: "Sof\xEDa", slug: "sofia" },
+    { name: "In\xE9s", slug: "ines" },
+    { name: "Mani", slug: "mani" },
+    { name: "Fer", slug: "fer" }
+  ];
+  const DEFAULT_MATCHES = [
+    { id: "qf1", stage: "Cuartos", date: "S\xE1b 11 Jul", teamA: "Inglaterra", teamB: "Noruega", editableA: false, editableB: false },
+    { id: "qf2", stage: "Cuartos", date: "S\xE1b 11 Jul", teamA: "Argentina", teamB: "Suiza", editableA: false, editableB: false },
+    { id: "sf1", stage: "Semifinal", date: "Mar 14 Jul", teamA: "Francia", teamB: "Espa\xF1a", editableA: false, editableB: false },
+    { id: "sf2", stage: "Semifinal", date: "Mi\xE9 15 Jul", teamA: "Ganador Ing/Nor", teamB: "Ganador Arg/Sui", editableA: true, editableB: true },
+    { id: "tp", stage: "Tercer Puesto", date: "S\xE1b 18 Jul", teamA: "Perdedor SF1", teamB: "Perdedor SF2", editableA: true, editableB: true },
+    { id: "final", stage: "Final", date: "Dom 19 Jul", teamA: "Ganador SF1", teamB: "Ganador SF2", editableA: true, editableB: true }
+  ];
+  function safeGet(key, fallback) {
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (!raw) return fallback;
+      return JSON.parse(raw);
+    } catch (e) {
+      return fallback;
+    }
   }
-  function savePredictions(){
-    if(!who) return;
-    safeSet("pred_"+who, draft);
-    setAllPreds((prev)=> ({ ...prev, [who]: { ...draft } }));
-    flash("¡Pronósticos guardados! ✔");
+  function safeSet(key, value) {
+    try {
+      window.localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {
+    }
   }
-  function setResScore(matchId, side, v){
-    setResDraft((prev)=>{ const cur = prev[matchId] ?? {a:0,b:0}; return { ...prev, [matchId]: { ...cur, [side]: v } }; });
+  function sign(n) {
+    return n > 0 ? 1 : n < 0 ? -1 : 0;
   }
-  function setTeamName(matchId, side, name){
-    setMatches((prev)=> prev.map((m)=> m.id===matchId ? { ...m, ["team"+side]: name } : m));
+  function pointsFor(pred, res) {
+    if (!pred || !res) return null;
+    if (pred.a === res.a && pred.b === res.b) return 3;
+    if (sign(pred.a - pred.b) === sign(res.a - res.b)) return 1;
+    return 0;
   }
-  function saveResults(){
-    safeSet("results", resDraft); safeSet("matches", matches);
-    setResults(resDraft); flash("¡Resultados y equipos guardados! ✔");
+  function Stepper({ team, value, onChange }) {
+    const clamp = (v) => Math.max(0, Math.min(20, v));
+    return /* @__PURE__ */ React.createElement("div", { style: s.stepRow }, /* @__PURE__ */ React.createElement("div", { style: s.teamName, className: "condensed" }, team), /* @__PURE__ */ React.createElement("div", { style: s.stepControls }, /* @__PURE__ */ React.createElement("button", { "aria-label": "menos", style: s.stepBtn, onClick: () => onChange(clamp(value - 1)) }, "\u2212"), /* @__PURE__ */ React.createElement("div", { style: s.digit, className: "condensed" }, value), /* @__PURE__ */ React.createElement("button", { "aria-label": "mas", style: s.stepBtn, onClick: () => onChange(clamp(value + 1)) }, "+")));
   }
-
-  const ranking = useMemo(()=>{
-    return PARTICIPANTS.map((p)=>{
-      const preds = allPreds[p.slug] ?? {};
-      let pts=0, exact=0, played=0;
-      for(const m of matches){
-        const pt = pointsFor(preds[m.id], results[m.id]);
-        if(pt!==null){ pts+=pt; played+=1; if(pt===3) exact+=1; }
+  function TabBtn({ label, active, onClick }) {
+    return /* @__PURE__ */ React.createElement("button", { onClick, className: "condensed", style: { ...s.tabBtn, ...active ? s.tabBtnActive : {} } }, label);
+  }
+  function MatchCard({ match, children }) {
+    return /* @__PURE__ */ React.createElement("div", { style: s.card }, /* @__PURE__ */ React.createElement("div", { style: s.cardHead }, /* @__PURE__ */ React.createElement("span", { style: s.stage, className: "condensed" }, match.stage), /* @__PURE__ */ React.createElement("span", { style: s.date, className: "condensed" }, match.date)), /* @__PURE__ */ React.createElement("div", { style: s.board }, children));
+  }
+  function App() {
+    const [ready, setReady] = useState(false);
+    const [who, setWho] = useState("");
+    const [tab, setTab] = useState("pred");
+    const [matches, setMatches] = useState(DEFAULT_MATCHES);
+    const [results, setResults] = useState({});
+    const [draft, setDraft] = useState({});
+    const [resDraft, setResDraft] = useState({});
+    const [allPreds, setAllPreds] = useState({});
+    const [toast, setToast] = useState("");
+    useEffect(() => {
+      const savedMatches = safeGet("matches", DEFAULT_MATCHES);
+      const merged = DEFAULT_MATCHES.map((d) => {
+        const found = savedMatches.find((m) => m.id === d.id);
+        return found ? { ...d, teamA: found.teamA, teamB: found.teamB } : d;
+      });
+      setMatches(merged);
+      const savedResults = safeGet("results", {});
+      setResults(savedResults);
+      setResDraft(savedResults);
+      const preds = {};
+      for (const p of PARTICIPANTS) {
+        preds[p.slug] = safeGet("pred_" + p.slug, {});
       }
-      return { ...p, pts, exact, played };
-    }).sort((x,y)=> y.pts-x.pts || y.exact-x.exact || x.name.localeCompare(y.name));
-  }, [allPreds, results, matches]);
-
-  const whoName = (PARTICIPANTS.find((p)=>p.slug===who) || {}).name || "";
-
-  if(!ready){
-    return <main style={s.shell}><div style={{padding:40,textAlign:"center",color:"var(--muted)"}} className="condensed">Cargando la cancha…</div></main>;
+      setAllPreds(preds);
+      const savedWho = safeGet("who", "");
+      if (savedWho) setWho(savedWho);
+      setReady(true);
+    }, []);
+    useEffect(() => {
+      if (!who) {
+        setDraft({});
+        return;
+      }
+      setDraft(allPreds[who] ? { ...allPreds[who] } : {});
+    }, [who, allPreds]);
+    function flash(msg) {
+      setToast(msg);
+      window.setTimeout(() => setToast(""), 2200);
+    }
+    function selectWho(slug) {
+      setWho(slug);
+      safeSet("who", slug);
+    }
+    function setDraftScore(matchId, side, v) {
+      setDraft((prev) => {
+        const cur = prev[matchId] ?? { a: 0, b: 0 };
+        return { ...prev, [matchId]: { ...cur, [side]: v } };
+      });
+    }
+    function savePredictions() {
+      if (!who) return;
+      safeSet("pred_" + who, draft);
+      setAllPreds((prev) => ({ ...prev, [who]: { ...draft } }));
+      flash("\xA1Pron\xF3sticos guardados! \u2714");
+    }
+    function setResScore(matchId, side, v) {
+      setResDraft((prev) => {
+        const cur = prev[matchId] ?? { a: 0, b: 0 };
+        return { ...prev, [matchId]: { ...cur, [side]: v } };
+      });
+    }
+    function setTeamName(matchId, side, name) {
+      setMatches((prev) => prev.map((m) => m.id === matchId ? { ...m, ["team" + side]: name } : m));
+    }
+    function saveResults() {
+      safeSet("results", resDraft);
+      safeSet("matches", matches);
+      setResults(resDraft);
+      flash("\xA1Resultados y equipos guardados! \u2714");
+    }
+    const ranking = useMemo(() => {
+      return PARTICIPANTS.map((p) => {
+        const preds = allPreds[p.slug] ?? {};
+        let pts = 0, exact = 0, played = 0;
+        for (const m of matches) {
+          const pt = pointsFor(preds[m.id], results[m.id]);
+          if (pt !== null) {
+            pts += pt;
+            played += 1;
+            if (pt === 3) exact += 1;
+          }
+        }
+        return { ...p, pts, exact, played };
+      }).sort((x, y) => y.pts - x.pts || y.exact - x.exact || x.name.localeCompare(y.name));
+    }, [allPreds, results, matches]);
+    const whoName = (PARTICIPANTS.find((p) => p.slug === who) || {}).name || "";
+    if (!ready) {
+      return /* @__PURE__ */ React.createElement("main", { style: s.shell }, /* @__PURE__ */ React.createElement("div", { style: { padding: 40, textAlign: "center", color: "var(--muted)" }, className: "condensed" }, "Cargando la cancha\u2026"));
+    }
+    return /* @__PURE__ */ React.createElement("main", { style: s.shell }, /* @__PURE__ */ React.createElement("header", { style: s.header }, /* @__PURE__ */ React.createElement("div", { style: s.crest, className: "condensed" }, "\u26BD"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h1", { style: s.title, className: "condensed" }, "LA PENCA"), /* @__PURE__ */ React.createElement("div", { style: s.subtitle, className: "condensed" }, "MUNDIAL 2026 \xB7 QUINIELA FAMILIAR"))), /* @__PURE__ */ React.createElement("section", { style: s.whoBox }, /* @__PURE__ */ React.createElement("div", { style: s.whoLabel, className: "condensed" }, "\xBFQUI\xC9N SOS?"), /* @__PURE__ */ React.createElement("div", { style: s.chips }, PARTICIPANTS.map((p) => {
+      const active = p.slug === who;
+      return /* @__PURE__ */ React.createElement("button", { key: p.slug, onClick: () => selectWho(p.slug), className: "condensed", style: { ...s.chip, ...active ? s.chipActive : {} } }, p.name);
+    }))), /* @__PURE__ */ React.createElement("nav", { style: s.tabs }, /* @__PURE__ */ React.createElement(TabBtn, { label: "Mis Pron\xF3sticos", active: tab === "pred", onClick: () => setTab("pred") }), /* @__PURE__ */ React.createElement(TabBtn, { label: "Tabla", active: tab === "tabla", onClick: () => setTab("tabla") }), /* @__PURE__ */ React.createElement(TabBtn, { label: "Resultados", active: tab === "res", onClick: () => setTab("res") })), /* @__PURE__ */ React.createElement("div", { style: s.content }, tab === "pred" && (!who ? /* @__PURE__ */ React.createElement("div", { style: s.empty, className: "condensed" }, "Eleg\xED qui\xE9n sos arriba para cargar tus pron\xF3sticos.") : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: s.sectionHint, className: "condensed" }, "Pron\xF3sticos de ", /* @__PURE__ */ React.createElement("span", { style: { color: "var(--amber)" } }, whoName)), matches.map((m) => {
+      const sc = draft[m.id] ?? { a: 0, b: 0 };
+      return /* @__PURE__ */ React.createElement(MatchCard, { key: m.id, match: m }, /* @__PURE__ */ React.createElement(Stepper, { team: m.teamA, value: sc.a, onChange: (v) => setDraftScore(m.id, "a", v) }), /* @__PURE__ */ React.createElement("div", { style: s.vs, className: "condensed" }, "VS"), /* @__PURE__ */ React.createElement(Stepper, { team: m.teamB, value: sc.b, onChange: (v) => setDraftScore(m.id, "b", v) }));
+    }), /* @__PURE__ */ React.createElement("button", { style: s.primaryBtn, className: "condensed", onClick: savePredictions }, "GUARDAR MIS PRON\xD3STICOS"))), tab === "tabla" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: s.sectionHint, className: "condensed" }, "Ranking \xB7 3 pts resultado exacto \xB7 1 pt ganador/empate"), /* @__PURE__ */ React.createElement("div", { style: s.table }, /* @__PURE__ */ React.createElement("div", { style: { ...s.trow, ...s.thead }, className: "condensed" }, /* @__PURE__ */ React.createElement("span", { style: s.cPos }, "#"), /* @__PURE__ */ React.createElement("span", { style: s.cName }, "Participante"), /* @__PURE__ */ React.createElement("span", { style: s.cNum }, "PJ"), /* @__PURE__ */ React.createElement("span", { style: s.cNum }, "Ex"), /* @__PURE__ */ React.createElement("span", { style: s.cPts }, "Pts")), ranking.map((r, i) => {
+      const mine = r.slug === who;
+      return /* @__PURE__ */ React.createElement("div", { key: r.slug, className: "condensed", style: { ...s.trow, ...mine ? s.trowMine : {} } }, /* @__PURE__ */ React.createElement("span", { style: s.cPos }, i + 1), /* @__PURE__ */ React.createElement("span", { style: s.cName }, r.name, mine ? " \xB7" : ""), /* @__PURE__ */ React.createElement("span", { style: s.cNum }, r.played), /* @__PURE__ */ React.createElement("span", { style: s.cNum }, r.exact), /* @__PURE__ */ React.createElement("span", { style: s.cPts }, r.pts));
+    })), /* @__PURE__ */ React.createElement("div", { style: s.legend, className: "condensed" }, "PJ = partidos con resultado cargado \xB7 Ex = resultados exactos")), tab === "res" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: s.sectionHint, className: "condensed" }, 'Carg\xE1 el resultado real. Edit\xE1 los equipos "por definir".'), matches.map((m) => {
+      const sc = resDraft[m.id] ?? { a: 0, b: 0 };
+      return /* @__PURE__ */ React.createElement(MatchCard, { key: m.id, match: m }, (m.editableA || m.editableB) && /* @__PURE__ */ React.createElement("div", { style: s.editNames }, m.editableA && /* @__PURE__ */ React.createElement("input", { style: s.nameInput, value: m.teamA, onChange: (e) => setTeamName(m.id, "A", e.target.value), placeholder: "Equipo A" }), m.editableB && /* @__PURE__ */ React.createElement("input", { style: s.nameInput, value: m.teamB, onChange: (e) => setTeamName(m.id, "B", e.target.value), placeholder: "Equipo B" })), /* @__PURE__ */ React.createElement(Stepper, { team: m.teamA, value: sc.a, onChange: (v) => setResScore(m.id, "a", v) }), /* @__PURE__ */ React.createElement("div", { style: s.vs, className: "condensed" }, "VS"), /* @__PURE__ */ React.createElement(Stepper, { team: m.teamB, value: sc.b, onChange: (v) => setResScore(m.id, "b", v) }));
+    }), /* @__PURE__ */ React.createElement("button", { style: s.primaryBtn, className: "condensed", onClick: saveResults }, "GUARDAR RESULTADOS"))), toast && /* @__PURE__ */ React.createElement("div", { style: s.toast, className: "condensed" }, toast), /* @__PURE__ */ React.createElement("footer", { style: s.footer, className: "condensed" }, "Se guarda en este dispositivo \xB7 La Penca 2026"));
   }
-
-  return (
-    <main style={s.shell}>
-      <header style={s.header}>
-        <div style={s.crest} className="condensed">⚽</div>
-        <div>
-          <h1 style={s.title} className="condensed">LA PENCA</h1>
-          <div style={s.subtitle} className="condensed">MUNDIAL 2026 · QUINIELA FAMILIAR</div>
-        </div>
-      </header>
-
-      <section style={s.whoBox}>
-        <div style={s.whoLabel} className="condensed">¿QUIÉN SOS?</div>
-        <div style={s.chips}>
-          {PARTICIPANTS.map((p)=>{
-            const active = p.slug===who;
-            return <button key={p.slug} onClick={()=>selectWho(p.slug)} className="condensed" style={{...s.chip, ...(active?s.chipActive:{})}}>{p.name}</button>;
-          })}
-        </div>
-      </section>
-
-      <nav style={s.tabs}>
-        <TabBtn label="Mis Pronósticos" active={tab==="pred"} onClick={()=>setTab("pred")} />
-        <TabBtn label="Tabla" active={tab==="tabla"} onClick={()=>setTab("tabla")} />
-        <TabBtn label="Resultados" active={tab==="res"} onClick={()=>setTab("res")} />
-      </nav>
-
-      <div style={s.content}>
-        {tab==="pred" && (
-          !who ? (
-            <div style={s.empty} className="condensed">Elegí quién sos arriba para cargar tus pronósticos.</div>
-          ) : (
-            <React.Fragment>
-              <div style={s.sectionHint} className="condensed">Pronósticos de <span style={{color:"var(--amber)"}}>{whoName}</span></div>
-              {matches.map((m)=>{
-                const sc = draft[m.id] ?? {a:0,b:0};
-                return (
-                  <MatchCard key={m.id} match={m}>
-                    <Stepper team={m.teamA} value={sc.a} onChange={(v)=>setDraftScore(m.id,"a",v)} />
-                    <div style={s.vs} className="condensed">VS</div>
-                    <Stepper team={m.teamB} value={sc.b} onChange={(v)=>setDraftScore(m.id,"b",v)} />
-                  </MatchCard>
-                );
-              })}
-              <button style={s.primaryBtn} className="condensed" onClick={savePredictions}>GUARDAR MIS PRONÓSTICOS</button>
-            </React.Fragment>
-          )
-        )}
-
-        {tab==="tabla" && (
-          <React.Fragment>
-            <div style={s.sectionHint} className="condensed">Ranking · 3 pts resultado exacto · 1 pt ganador/empate</div>
-            <div style={s.table}>
-              <div style={{...s.trow, ...s.thead}} className="condensed">
-                <span style={s.cPos}>#</span><span style={s.cName}>Participante</span>
-                <span style={s.cNum}>PJ</span><span style={s.cNum}>Ex</span><span style={s.cPts}>Pts</span>
-              </div>
-              {ranking.map((r,i)=>{
-                const mine = r.slug===who;
-                return (
-                  <div key={r.slug} className="condensed" style={{...s.trow, ...(mine?s.trowMine:{})}}>
-                    <span style={s.cPos}>{i+1}</span>
-                    <span style={s.cName}>{r.name}{mine?" ·":""}</span>
-                    <span style={s.cNum}>{r.played}</span>
-                    <span style={s.cNum}>{r.exact}</span>
-                    <span style={s.cPts}>{r.pts}</span>
-                  </div>
-                );
-              })}
-            </div>
-            <div style={s.legend} className="condensed">PJ = partidos con resultado cargado · Ex = resultados exactos</div>
-          </React.Fragment>
-        )}
-
-        {tab==="res" && (
-          <React.Fragment>
-            <div style={s.sectionHint} className="condensed">Cargá el resultado real. Editá los equipos "por definir".</div>
-            {matches.map((m)=>{
-              const sc = resDraft[m.id] ?? {a:0,b:0};
-              return (
-                <MatchCard key={m.id} match={m}>
-                  {(m.editableA || m.editableB) && (
-                    <div style={s.editNames}>
-                      {m.editableA && <input style={s.nameInput} value={m.teamA} onChange={(e)=>setTeamName(m.id,"A",e.target.value)} placeholder="Equipo A" />}
-                      {m.editableB && <input style={s.nameInput} value={m.teamB} onChange={(e)=>setTeamName(m.id,"B",e.target.value)} placeholder="Equipo B" />}
-                    </div>
-                  )}
-                  <Stepper team={m.teamA} value={sc.a} onChange={(v)=>setResScore(m.id,"a",v)} />
-                  <div style={s.vs} className="condensed">VS</div>
-                  <Stepper team={m.teamB} value={sc.b} onChange={(v)=>setResScore(m.id,"b",v)} />
-                </MatchCard>
-              );
-            })}
-            <button style={s.primaryBtn} className="condensed" onClick={saveResults}>GUARDAR RESULTADOS</button>
-          </React.Fragment>
-        )}
-      </div>
-
-      {toast && <div style={s.toast} className="condensed">{toast}</div>}
-      <footer style={s.footer} className="condensed">Se guarda en este dispositivo · La Penca 2026</footer>
-    </main>
-  );
-}
-
-/* ---------- Estilos ---------- */
-const s = {
-  shell:{maxWidth:480,margin:"0 auto",padding:"16px 14px 60px",minHeight:"100vh"},
-  header:{display:"flex",alignItems:"center",gap:12,padding:"6px 4px 14px"},
-  crest:{fontSize:34,width:52,height:52,display:"grid",placeItems:"center",background:"var(--panel-strong)",border:"2px solid var(--amber)",borderRadius:14},
-  title:{margin:0,fontSize:34,lineHeight:1,letterSpacing:".06em",color:"var(--amber)",textShadow:"0 2px 0 rgba(0,0,0,0.4)"},
-  subtitle:{fontSize:12,letterSpacing:".18em",color:"var(--muted)",marginTop:4},
-  whoBox:{background:"var(--panel)",border:"1px solid var(--line)",borderRadius:16,padding:"12px 12px 14px",marginBottom:14},
-  whoLabel:{fontSize:13,letterSpacing:".16em",color:"var(--muted)",marginBottom:10},
-  chips:{display:"flex",flexWrap:"wrap",gap:8},
-  chip:{border:"1px solid var(--line)",background:"rgba(255,255,255,0.04)",color:"var(--text)",borderRadius:999,padding:"8px 14px",fontSize:16,letterSpacing:".02em"},
-  chipActive:{background:"var(--amber)",color:"#101010",borderColor:"var(--amber)",boxShadow:"0 4px 14px rgba(242,183,5,0.28)"},
-  tabs:{display:"flex",gap:6,background:"var(--panel)",border:"1px solid var(--line)",borderRadius:14,padding:5,marginBottom:16},
-  tabBtn:{flex:1,border:"none",background:"transparent",color:"var(--muted)",borderRadius:10,padding:"10px 6px",fontSize:14.5,letterSpacing:".02em"},
-  tabBtnActive:{background:"var(--amber)",color:"#101010"},
-  content:{display:"flex",flexDirection:"column",gap:14},
-  sectionHint:{fontSize:14,color:"var(--muted)",letterSpacing:".03em",padding:"2px 2px"},
-  empty:{textAlign:"center",color:"var(--muted)",padding:"40px 20px",fontSize:17,background:"var(--panel)",border:"1px dashed var(--line)",borderRadius:16},
-  card:{background:"var(--panel)",border:"1px solid var(--line)",borderRadius:16,overflow:"hidden"},
-  cardHead:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 14px",background:"rgba(0,0,0,0.22)",borderBottom:"1px solid var(--line)"},
-  stage:{fontSize:13,letterSpacing:".14em",color:"var(--amber)",textTransform:"uppercase"},
-  date:{fontSize:13,letterSpacing:".08em",color:"var(--muted)"},
-  board:{padding:"14px 14px 16px"},
-  editNames:{display:"flex",gap:8,marginBottom:12},
-  nameInput:{flex:1,minWidth:0,background:"rgba(0,0,0,0.35)",border:"1px solid var(--line)",borderRadius:10,color:"var(--text)",padding:"9px 10px",fontSize:15},
-  stepRow:{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10},
-  teamName:{fontSize:19,letterSpacing:".02em",flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"},
-  stepControls:{display:"flex",alignItems:"center",gap:8},
-  stepBtn:{width:38,height:44,borderRadius:10,border:"1px solid var(--line)",background:"rgba(255,255,255,0.06)",color:"var(--amber)",fontSize:24,lineHeight:1,display:"grid",placeItems:"center"},
-  digit:{width:52,height:52,display:"grid",placeItems:"center",background:"#0a0a0a",border:"1px solid #2a2a2a",borderRadius:10,color:"#F2B705",fontSize:34,lineHeight:1,boxShadow:"inset 0 2px 8px rgba(0,0,0,0.6)",fontVariantNumeric:"tabular-nums"},
-  vs:{textAlign:"center",color:"var(--muted)",fontSize:13,letterSpacing:".2em",padding:"6px 0"},
-  primaryBtn:{marginTop:4,width:"100%",border:"none",background:"var(--amber)",color:"#101010",borderRadius:14,padding:"16px 12px",fontSize:18,letterSpacing:".06em",boxShadow:"0 6px 18px rgba(242,183,5,0.28)"},
-  table:{background:"var(--panel)",border:"1px solid var(--line)",borderRadius:16,overflow:"hidden"},
-  trow:{display:"grid",gridTemplateColumns:"34px 1fr 40px 40px 52px",alignItems:"center",padding:"12px 12px",borderBottom:"1px solid var(--line)",fontSize:17},
-  thead:{background:"rgba(0,0,0,0.28)",color:"var(--muted)",fontSize:13,letterSpacing:".1em"},
-  trowMine:{background:"rgba(242,183,5,0.14)",boxShadow:"inset 3px 0 0 var(--amber)"},
-  cPos:{color:"var(--amber)",fontVariantNumeric:"tabular-nums"},
-  cName:{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"},
-  cNum:{textAlign:"center",color:"var(--muted)",fontVariantNumeric:"tabular-nums"},
-  cPts:{textAlign:"center",color:"var(--amber)",fontSize:20,fontVariantNumeric:"tabular-nums"},
-  legend:{fontSize:12.5,color:"var(--muted)",letterSpacing:".04em",padding:"2px 2px"},
-  toast:{position:"fixed",left:"50%",bottom:24,transform:"translateX(-50%)",background:"#101010",color:"var(--amber)",border:"1px solid var(--amber)",borderRadius:999,padding:"12px 20px",fontSize:15,letterSpacing:".04em",boxShadow:"0 8px 24px rgba(0,0,0,0.4)",zIndex:50},
-  footer:{textAlign:"center",color:"var(--muted)",fontSize:12,letterSpacing:".08em",marginTop:26,opacity:.7},
-};
-
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  const s = {
+    shell: { maxWidth: 480, margin: "0 auto", padding: "16px 14px 60px", minHeight: "100vh" },
+    header: { display: "flex", alignItems: "center", gap: 12, padding: "6px 4px 14px" },
+    crest: { fontSize: 34, width: 52, height: 52, display: "grid", placeItems: "center", background: "var(--panel-strong)", border: "2px solid var(--amber)", borderRadius: 14 },
+    title: { margin: 0, fontSize: 34, lineHeight: 1, letterSpacing: ".06em", color: "var(--amber)", textShadow: "0 2px 0 rgba(0,0,0,0.4)" },
+    subtitle: { fontSize: 12, letterSpacing: ".18em", color: "var(--muted)", marginTop: 4 },
+    whoBox: { background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 16, padding: "12px 12px 14px", marginBottom: 14 },
+    whoLabel: { fontSize: 13, letterSpacing: ".16em", color: "var(--muted)", marginBottom: 10 },
+    chips: { display: "flex", flexWrap: "wrap", gap: 8 },
+    chip: { border: "1px solid var(--line)", background: "rgba(255,255,255,0.04)", color: "var(--text)", borderRadius: 999, padding: "8px 14px", fontSize: 16, letterSpacing: ".02em" },
+    chipActive: { background: "var(--amber)", color: "#101010", borderColor: "var(--amber)", boxShadow: "0 4px 14px rgba(242,183,5,0.28)" },
+    tabs: { display: "flex", gap: 6, background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 14, padding: 5, marginBottom: 16 },
+    tabBtn: { flex: 1, border: "none", background: "transparent", color: "var(--muted)", borderRadius: 10, padding: "10px 6px", fontSize: 14.5, letterSpacing: ".02em" },
+    tabBtnActive: { background: "var(--amber)", color: "#101010" },
+    content: { display: "flex", flexDirection: "column", gap: 14 },
+    sectionHint: { fontSize: 14, color: "var(--muted)", letterSpacing: ".03em", padding: "2px 2px" },
+    empty: { textAlign: "center", color: "var(--muted)", padding: "40px 20px", fontSize: 17, background: "var(--panel)", border: "1px dashed var(--line)", borderRadius: 16 },
+    card: { background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 16, overflow: "hidden" },
+    cardHead: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 14px", background: "rgba(0,0,0,0.22)", borderBottom: "1px solid var(--line)" },
+    stage: { fontSize: 13, letterSpacing: ".14em", color: "var(--amber)", textTransform: "uppercase" },
+    date: { fontSize: 13, letterSpacing: ".08em", color: "var(--muted)" },
+    board: { padding: "14px 14px 16px" },
+    editNames: { display: "flex", gap: 8, marginBottom: 12 },
+    nameInput: { flex: 1, minWidth: 0, background: "rgba(0,0,0,0.35)", border: "1px solid var(--line)", borderRadius: 10, color: "var(--text)", padding: "9px 10px", fontSize: 15 },
+    stepRow: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 },
+    teamName: { fontSize: 19, letterSpacing: ".02em", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+    stepControls: { display: "flex", alignItems: "center", gap: 8 },
+    stepBtn: { width: 38, height: 44, borderRadius: 10, border: "1px solid var(--line)", background: "rgba(255,255,255,0.06)", color: "var(--amber)", fontSize: 24, lineHeight: 1, display: "grid", placeItems: "center" },
+    digit: { width: 52, height: 52, display: "grid", placeItems: "center", background: "#0a0a0a", border: "1px solid #2a2a2a", borderRadius: 10, color: "#F2B705", fontSize: 34, lineHeight: 1, boxShadow: "inset 0 2px 8px rgba(0,0,0,0.6)", fontVariantNumeric: "tabular-nums" },
+    vs: { textAlign: "center", color: "var(--muted)", fontSize: 13, letterSpacing: ".2em", padding: "6px 0" },
+    primaryBtn: { marginTop: 4, width: "100%", border: "none", background: "var(--amber)", color: "#101010", borderRadius: 14, padding: "16px 12px", fontSize: 18, letterSpacing: ".06em", boxShadow: "0 6px 18px rgba(242,183,5,0.28)" },
+    table: { background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 16, overflow: "hidden" },
+    trow: { display: "grid", gridTemplateColumns: "34px 1fr 40px 40px 52px", alignItems: "center", padding: "12px 12px", borderBottom: "1px solid var(--line)", fontSize: 17 },
+    thead: { background: "rgba(0,0,0,0.28)", color: "var(--muted)", fontSize: 13, letterSpacing: ".1em" },
+    trowMine: { background: "rgba(242,183,5,0.14)", boxShadow: "inset 3px 0 0 var(--amber)" },
+    cPos: { color: "var(--amber)", fontVariantNumeric: "tabular-nums" },
+    cName: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+    cNum: { textAlign: "center", color: "var(--muted)", fontVariantNumeric: "tabular-nums" },
+    cPts: { textAlign: "center", color: "var(--amber)", fontSize: 20, fontVariantNumeric: "tabular-nums" },
+    legend: { fontSize: 12.5, color: "var(--muted)", letterSpacing: ".04em", padding: "2px 2px" },
+    toast: { position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)", background: "#101010", color: "var(--amber)", border: "1px solid var(--amber)", borderRadius: 999, padding: "12px 20px", fontSize: 15, letterSpacing: ".04em", boxShadow: "0 8px 24px rgba(0,0,0,0.4)", zIndex: 50 },
+    footer: { textAlign: "center", color: "var(--muted)", fontSize: 12, letterSpacing: ".08em", marginTop: 26, opacity: 0.7 }
+  };
+  ReactDOM.createRoot(document.getElementById("root")).render(/* @__PURE__ */ React.createElement(App, null));
+})();
 </script>
 </body>
 </html>
