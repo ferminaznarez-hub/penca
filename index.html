@@ -46,7 +46,6 @@
     { name: "Fer", slug: "fer" }
   ];
   const DEFAULT_MATCHES = [
-    { id: "qf1", stage: "Cuartos", date: "S\xE1b 11 Jul", teamA: "Inglaterra", teamB: "Noruega", editableA: false, editableB: false },
     { id: "qf2", stage: "Cuartos", date: "S\xE1b 11 Jul", teamA: "Argentina", teamB: "Suiza", editableA: false, editableB: false },
     { id: "sf1", stage: "Semifinal", date: "Mar 14 Jul", teamA: "Francia", teamB: "Espa\xF1a", editableA: false, editableB: false },
     { id: "sf2", stage: "Semifinal", date: "Mi\xE9 15 Jul", teamA: "Ganador Ing/Nor", teamB: "Ganador Arg/Sui", editableA: true, editableB: true },
@@ -77,9 +76,56 @@
     if (sign(pred.a - pred.b) === sign(res.a - res.b)) return 1;
     return 0;
   }
+  const FLAGS = {
+    "argentina": "\u{1F1E6}\u{1F1F7}",
+    "suiza": "\u{1F1E8}\u{1F1ED}",
+    "francia": "\u{1F1EB}\u{1F1F7}",
+    "espa\xF1a": "\u{1F1EA}\u{1F1F8}",
+    "espana": "\u{1F1EA}\u{1F1F8}",
+    "inglaterra": "\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}",
+    "noruega": "\u{1F1F3}\u{1F1F4}",
+    "brasil": "\u{1F1E7}\u{1F1F7}",
+    "uruguay": "\u{1F1FA}\u{1F1FE}",
+    "portugal": "\u{1F1F5}\u{1F1F9}",
+    "alemania": "\u{1F1E9}\u{1F1EA}",
+    "italia": "\u{1F1EE}\u{1F1F9}",
+    "croacia": "\u{1F1ED}\u{1F1F7}",
+    "marruecos": "\u{1F1F2}\u{1F1E6}",
+    "pa\xEDses bajos": "\u{1F1F3}\u{1F1F1}",
+    "paises bajos": "\u{1F1F3}\u{1F1F1}",
+    "holanda": "\u{1F1F3}\u{1F1F1}",
+    "b\xE9lgica": "\u{1F1E7}\u{1F1EA}",
+    "belgica": "\u{1F1E7}\u{1F1EA}",
+    "estados unidos": "\u{1F1FA}\u{1F1F8}",
+    "eeuu": "\u{1F1FA}\u{1F1F8}",
+    "m\xE9xico": "\u{1F1F2}\u{1F1FD}",
+    "mexico": "\u{1F1F2}\u{1F1FD}",
+    "canad\xE1": "\u{1F1E8}\u{1F1E6}",
+    "canada": "\u{1F1E8}\u{1F1E6}",
+    "colombia": "\u{1F1E8}\u{1F1F4}",
+    "jap\xF3n": "\u{1F1EF}\u{1F1F5}",
+    "japon": "\u{1F1EF}\u{1F1F5}",
+    "corea del sur": "\u{1F1F0}\u{1F1F7}",
+    "corea": "\u{1F1F0}\u{1F1F7}",
+    "senegal": "\u{1F1F8}\u{1F1F3}",
+    "ghana": "\u{1F1EC}\u{1F1ED}",
+    "dinamarca": "\u{1F1E9}\u{1F1F0}",
+    "suecia": "\u{1F1F8}\u{1F1EA}",
+    "polonia": "\u{1F1F5}\u{1F1F1}",
+    "ecuador": "\u{1F1EA}\u{1F1E8}",
+    "chile": "\u{1F1E8}\u{1F1F1}",
+    "per\xFA": "\u{1F1F5}\u{1F1EA}",
+    "peru": "\u{1F1F5}\u{1F1EA}",
+    "australia": "\u{1F1E6}\u{1F1FA}",
+    "escocia": "\u{1F3F4}\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}"
+  };
+  function flagFor(name) {
+    const key = (name || "").trim().toLowerCase();
+    return FLAGS[key] || "\u26BD";
+  }
   function Stepper({ team, value, onChange }) {
     const clamp = (v) => Math.max(0, Math.min(20, v));
-    return /* @__PURE__ */ React.createElement("div", { style: s.stepRow }, /* @__PURE__ */ React.createElement("div", { style: s.teamName, className: "condensed" }, team), /* @__PURE__ */ React.createElement("div", { style: s.stepControls }, /* @__PURE__ */ React.createElement("button", { "aria-label": "menos", style: s.stepBtn, onClick: () => onChange(clamp(value - 1)) }, "\u2212"), /* @__PURE__ */ React.createElement("div", { style: s.digit, className: "condensed" }, value), /* @__PURE__ */ React.createElement("button", { "aria-label": "mas", style: s.stepBtn, onClick: () => onChange(clamp(value + 1)) }, "+")));
+    return /* @__PURE__ */ React.createElement("div", { style: s.stepRow }, /* @__PURE__ */ React.createElement("div", { style: s.teamName, className: "condensed" }, /* @__PURE__ */ React.createElement("span", { style: s.flag }, flagFor(team)), team), /* @__PURE__ */ React.createElement("div", { style: s.stepControls }, /* @__PURE__ */ React.createElement("button", { "aria-label": "menos", style: s.stepBtn, onClick: () => onChange(clamp(value - 1)) }, "\u2212"), /* @__PURE__ */ React.createElement("div", { style: s.digit, className: "condensed" }, value), /* @__PURE__ */ React.createElement("button", { "aria-label": "mas", style: s.stepBtn, onClick: () => onChange(clamp(value + 1)) }, "+")));
   }
   function TabBtn({ label, active, onClick }) {
     return /* @__PURE__ */ React.createElement("button", { onClick, className: "condensed", style: { ...s.tabBtn, ...active ? s.tabBtnActive : {} } }, label);
@@ -217,6 +263,7 @@
     nameInput: { flex: 1, minWidth: 0, background: "rgba(0,0,0,0.35)", border: "1px solid var(--line)", borderRadius: 10, color: "var(--text)", padding: "9px 10px", fontSize: 15 },
     stepRow: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 },
     teamName: { fontSize: 19, letterSpacing: ".02em", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+    flag: { marginRight: 8, fontSize: 22, letterSpacing: 0 },
     stepControls: { display: "flex", alignItems: "center", gap: 8 },
     stepBtn: { width: 38, height: 44, borderRadius: 10, border: "1px solid var(--line)", background: "rgba(255,255,255,0.06)", color: "var(--amber)", fontSize: 24, lineHeight: 1, display: "grid", placeItems: "center" },
     digit: { width: 52, height: 52, display: "grid", placeItems: "center", background: "#0a0a0a", border: "1px solid #2a2a2a", borderRadius: 10, color: "#F2B705", fontSize: 34, lineHeight: 1, boxShadow: "inset 0 2px 8px rgba(0,0,0,0.6)", fontVariantNumeric: "tabular-nums" },
